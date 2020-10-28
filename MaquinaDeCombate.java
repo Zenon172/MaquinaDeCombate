@@ -2,14 +2,15 @@ package maquinacombate;
 
 import robocode.*;
 import java.awt.Color;
-import robocode.util.*;
+
 /**
  * MaquinaDeCombate - a robot by (Lincoln Silva de Oliveira)
  */
 public class MaquinaDeCombate extends AdvancedRobot {
+	
+	int dist = 80;
+	private String inimigo = null; 
 
-	double potenciaDoTiro, distancia, inimigoX, inimigoY, posicaoDoInimigo, velocidadeDoInimigo, altDoCampDeBatalha,
-	larDoCampDeBatalha, previsaoX, previsaoY, anguloAbsoluto, giroDoRadar, giroDoCanhao;
 
 	public void run() {
 		// Define as cores
@@ -21,90 +22,60 @@ public class MaquinaDeCombate extends AdvancedRobot {
 		
 		setAdjustGunForRobotTurn(true);
 		setAdjustRadarForGunTurn(true);
-		setAdjustRadarForRobotTurn(true);
 		
 		while (true) {
-			
-			ahead(40);
-			setTurnRight(45);
-			execute();
-			turnRadarRight(360);
-			
+
+			setTurnRadarRight(360);
+			ahead(80);
+			turnRight(90);
+
 			if(pertoParede()) {
-				back(50);
+				turnLeft(45);
+				back(100);
 			} else {
-				ahead(50);
+				ahead(10);
 			}			
 		}
 	}
 
 	public void onScannedRobot(ScannedRobotEvent e) {
 		
-		potenciaDoTiro = Math.min(2.0, getEnergy());
-		distancia = getHeadingRadians() + e.getBearingRadians();
-		inimigoX = getX() + e.getDistance() * Math.sin(distancia);
-		inimigoY = getY() + e.getDistance() * Math.cos(distancia);
-		posicaoDoInimigo = e.getHeadingRadians();
-		velocidadeDoInimigo = e.getVelocity();
-		altDoCampDeBatalha = getBattleFieldHeight();
-		larDoCampDeBatalha = getBattleFieldWidth();
-		previsaoX = inimigoX;
-		previsaoY = inimigoY;
-
-		previsaoX += Math.sin(posicaoDoInimigo) * velocidadeDoInimigo;
-		previsaoY += Math.cos(posicaoDoInimigo) * velocidadeDoInimigo;
-		if (previsaoX < 18.0 || previsaoY < 18.0 || previsaoX > larDoCampDeBatalha - 18.0
-				|| previsaoY > altDoCampDeBatalha - 18.0) {
-			previsaoX = Math.min(Math.max(18.0, previsaoX), larDoCampDeBatalha - 18.0);
-			previsaoY = Math.min(Math.max(18.0, previsaoY), altDoCampDeBatalha - 18.0);
-		}
-
-		anguloAbsoluto = Utils.normalAbsoluteAngle(Math.atan2(previsaoX - getX(), previsaoY - getY()));
-
-		setTurnRightRadians(distancia / 2 * -1 - getRadarHeadingRadians());
-		setTurnRadarRightRadians(Utils.normalRelativeAngle(distancia - getRadarHeadingRadians()));
-		setTurnGunRightRadians(Utils.normalRelativeAngle(anguloAbsoluto - getGunHeadingRadians()));
-		fogo(distancia);
-	}
-	
-	public void fogo(double distancia) {
-		if (distancia > 100 || getEnergy() < 30) {
-			fire(1);
-		} else if (distancia > 50) {
-			fire(2);
+		//Localizando o Robô inimigo
+		
+		if(inimigo == null){
+			inimigo = e.getName();
 		} else {
-			fire(3);
-	    }
+			setTurnRadarRightRadians(
+					robocode.util.Utils.normalRelativeAngle((getHeadingRadians() + e.getBearingRadians()) - getGunHeadingRadians()));
+		setTurnGunRightRadians(
+				robocode.util.Utils.normalRelativeAngle((getHeadingRadians() + e.getBearingRadians()) - getGunHeadingRadians()));
+		}
+		if (e.getDistance() < 200 && getEnergy() > 30) {
+			setFire(3);
+		} else {
+			setFire(2);
+		}
 	}
-	
-	public double anguloRelativo(double ANG) {
-		if (ANG> -180 && ANG<= 180) {
-			return ANG;
-		}
-		double REL = ANG;
-		while (REL<= -180) {
-			REL += 360;
-		}
-		while (ANG> 180) {
-			REL -= 360;
-		}
-		return REL;
-	}	
+
 
 	public void onHitByBullet(HitByBulletEvent e) {
 		
-		back(100);
-		turnRight(anguloRelativo(e.getBearing()));
-		turnGunRight(anguloRelativo(e.getBearingRadians()));
-		fire(2);
-		execute();
+		inimigo = e.getName();
+		
+		setTurnRadarRightRadians(
+				robocode.util.Utils.normalRelativeAngle((getHeadingRadians() + e.getBearingRadians()) - getGunHeadingRadians()));
+		setTurnGunRightRadians(
+				robocode.util.Utils.normalRelativeAngle((getHeadingRadians() + e.getBearingRadians()) - getGunHeadingRadians()));
+		
+		ahead(dist);
+		dist *= -1; 
 	}
 
 	
 	public void onHitRobot(HitRobotEvent e) {
 		
-		setAhead(e.getBearing());
-		turnGunRight(anguloRelativo(e.getBearing()));
+		double turnGunAmt = robocode.util.Utils.normalRelativeAngleDegrees(e.getBearing() + getHeading() - getGunHeading());
+		turnGunRight(turnGunAmt);
 		fire(3);
 	}
 	
@@ -113,8 +84,8 @@ public class MaquinaDeCombate extends AdvancedRobot {
 	}
 	
 	public void onHitWall(HitWallEvent e){
-		back(10);
-		turnRight(45);
+		turnRight(90);
+		ahead(100);
 	}
 
 }
