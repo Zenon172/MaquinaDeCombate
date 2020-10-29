@@ -8,32 +8,34 @@ import java.awt.Color;
  */
 public class MaquinaDeCombate extends AdvancedRobot {
 	
-	int dist = 80;
 	private String inimigo = null; 
 
 
 	public void run() {
 		// Define as cores
-		setBodyColor(Color.blue);
-		setGunColor(Color.black);
+		setBodyColor(Color.black);
+		setGunColor(Color.gray);
 		setRadarColor(Color.red);
 		setScanColor(Color.red);
-		setBulletColor(Color.red);
+		setBulletColor(Color.yellow);
 		
 		setAdjustGunForRobotTurn(true);
 		setAdjustRadarForGunTurn(true);
 		
 		while (true) {
 
-			setTurnRadarRight(360);
-			ahead(80);
-			turnRight(90);
+				setTurnRadarRight(360);
+				setTurnGunRight(1);
+				//ahead(10);
+				//turnRight(45);
+				//execute();
+				
 
 			if(pertoParede()) {
-				turnLeft(45);
-				back(100);
+				turnRight(45);
+				back(60);
 			} else {
-				ahead(10);
+				ahead(30);
 			}			
 		}
 	}
@@ -45,30 +47,52 @@ public class MaquinaDeCombate extends AdvancedRobot {
 		if(inimigo == null){
 			inimigo = e.getName();
 		} else {
-			setTurnRadarRightRadians(
-					robocode.util.Utils.normalRelativeAngle((getHeadingRadians() + e.getBearingRadians()) - getGunHeadingRadians()));
-		setTurnGunRightRadians(
-				robocode.util.Utils.normalRelativeAngle((getHeadingRadians() + e.getBearingRadians()) - getGunHeadingRadians()));
+				//Mirar radar no inimigo
+			setTurnRadarRight(anguloRelativo(e.getBearing()+getHeading()-getRadarHeading()));
+
+				//Mirar o canhão no inimigo.
+			setTurnGunRight(anguloRelativo(e.getBearing()+getHeading()-getGunHeading())); 
+
+				//virar na direção do inimigo
+			setTurnRight(anguloRelativo(e.getBearing())); 
 		}
-		if (e.getDistance() < 200 && getEnergy() > 30) {
+		double distancia = e.getDistance();
+		fogo(distancia);
+	}
+	public void fogo(double distancia){
+		if (distancia < 150 && getEnergy() > 60) {
 			setFire(3);
-		} else {
+		} else if ( distancia > 150 && getEnergy() > 40){
 			setFire(2);
+		} else {
+			setFire(1);
 		}
+	}
+	public double anguloRelativo(double ANG) {
+		if (ANG > -180 && ANG <= 180) {
+			return ANG;
+		}
+		double REL = ANG;
+		while (REL <= -180) {
+			REL += 360;
+		}
+		while (ANG > 180) {
+			REL -= 360;
+		}
+	return REL;
 	}
 
 
 	public void onHitByBullet(HitByBulletEvent e) {
-		
+			
 		inimigo = e.getName();
+		setTurnRadarRight(anguloRelativo(e.getBearing()+getHeading()-getRadarHeading()));
+		setTurnGunRight(anguloRelativo(e.getBearing()+getHeading()-getGunHeading()));
+		//turnRight(robocode.util.Utils.normalRelativeAngleDegrees(90 - (getHeading() - e.getHeading())));
+		turnRight(90);
+		ahead(10);
+		scan();
 		
-		setTurnRadarRightRadians(
-				robocode.util.Utils.normalRelativeAngle((getHeadingRadians() + e.getBearingRadians()) - getGunHeadingRadians()));
-		setTurnGunRightRadians(
-				robocode.util.Utils.normalRelativeAngle((getHeadingRadians() + e.getBearingRadians()) - getGunHeadingRadians()));
-		
-		ahead(dist);
-		dist *= -1; 
 	}
 
 	
@@ -77,6 +101,8 @@ public class MaquinaDeCombate extends AdvancedRobot {
 		double turnGunAmt = robocode.util.Utils.normalRelativeAngleDegrees(e.getBearing() + getHeading() - getGunHeading());
 		turnGunRight(turnGunAmt);
 		fire(3);
+		back(50);
+		turnLeft(45);
 	}
 	
 	public boolean pertoParede() {
@@ -84,8 +110,8 @@ public class MaquinaDeCombate extends AdvancedRobot {
 	}
 	
 	public void onHitWall(HitWallEvent e){
-		turnRight(90);
-		ahead(100);
+		turnRight(45);
+		ahead(60);
 	}
 
 }
